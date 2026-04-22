@@ -455,7 +455,7 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
         const currentMarkers = markersRef.current;
         const validIds = new Set<string>();
 
-        vehicles.forEach(vehicle => {
+        vehicles.forEach((vehicle: any) => {
             if (vehicleFilter !== 'all' && vehicle.type !== vehicleFilter) return;
             if (isNaN(vehicle.location.lng) || isNaN(vehicle.location.lat)) return;
             
