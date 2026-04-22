@@ -59,7 +59,7 @@ const TRAFFIC_HOTSPOTS = [
 ];
 
 // Active incidents storage - starts empty for clean demo
-let activeIncidents: TrafficIncident[] = [];
+const activeIncidents: TrafficIncident[] = [];
 let incidentIdCounter = 1;
 
 /**

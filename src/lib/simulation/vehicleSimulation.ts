@@ -610,7 +610,7 @@ class VehicleSimulationEngine {
       }
       
       // Calculate actual speed (with traffic circle slowdown)
-      let actualSpeed = baseSpeed * speedFactor * trafficSpeedFactor;
+      const actualSpeed = baseSpeed * speedFactor * trafficSpeedFactor;
 
       // Move vehicle along route
       // v21.4: 0.3s tick, 8x speed (realistic Bangalore traffic), 6 zones with 80-120 dots each, 60% red congestion

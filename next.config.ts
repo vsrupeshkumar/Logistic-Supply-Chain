@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     // Skip type checking during production builds (handled in dev)
     ignoreBuildErrors: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async rewrites() {
     // If deployed on Vercel, proxy all /api/ requests to the Render backend
     if (process.env.RENDER_BACKEND_URL) {

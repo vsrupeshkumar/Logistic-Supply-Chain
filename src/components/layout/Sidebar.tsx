@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Activity, LayoutDashboard, Truck, Map as MapIcon, Settings, LogOut } from 'lucide-react';
+import { Activity, LayoutDashboard, Truck, Map as MapIcon, Settings, LogOut, MonitorPlay } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { StressTestSimulator } from '@/components/dashboard/StressTestSimulator';
@@ -11,6 +11,7 @@ const sidebarItems = [
     { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
     { icon: Truck, label: 'Fleet Management', href: '/dashboard/vehicles' },
     { icon: MapIcon, label: 'Live Map', href: '/dashboard/map' },
+    { icon: MonitorPlay, label: 'Command Center', href: '/dashboard/command-center' },
     { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
 ];
 
