@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS vehicles (
     waypoint_index INTEGER DEFAULT 0,
     destination_lat REAL,
     destination_lng REAL,
+    current_route_json TEXT,
+    alternative_route_json TEXT,
     
     -- AI agent data
     last_ai_decision INTEGER DEFAULT (strftime('%s', 'now')),

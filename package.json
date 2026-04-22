@@ -10,9 +10,12 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:setup": "tsx scripts/migrate.ts",
     "test:system": "tsx tests/test-system.ts",
-    "test:traffic": "tsx tests/test-free-traffic.ts"
+    "test:traffic": "tsx tests/test-free-traffic.ts",
+    "check:mbtiles": "node scripts/check-mbtiles.js"
   },
   "dependencies": {
+    "@mapbox/mbtiles": "^0.12.1",
+    "@mapbox/vector-tile": "^2.0.4",
     "@neondatabase/serverless": "^1.0.2",
     "@react-three/fiber": "^9.5.0",
     "@turf/distance": "^7.3.4",
@@ -30,6 +33,9 @@
     "next": "16.1.6",
     "ogl": "^1.0.11",
     "openai": "^6.19.0",
+    "pbf": "^4.0.1",
+    "pmtiles": "^4.4.0",
+    "protobufjs": "^8.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.0",

@@ -88,11 +88,18 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
                     style: {
                         version: 8,
                         sources: {
-                            'local-mbtiles': {
-                                type: 'vector',
-                                tiles: [`${window.location.origin}/api/tiles/{z}/{x}/{y}`],
+                            // Use free CDN tiles as default - much faster and no setup required
+                            'osm-raster': {
+                                type: 'raster',
+                                tiles: [
+                                    'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                    'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                    'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                                ],
+                                tileSize: 256,
+                                attribution: '© OpenStreetMap contributors',
                                 minzoom: 0,
-                                maxzoom: 14 
+                                maxzoom: 19
                             },
                             // Traffic Flow Lines (Google Maps Style)
                             'traffic-flow': {
@@ -105,48 +112,13 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
                             }
                         },
                         layers: [
+                            // Base map layer (raster tiles from OSM)
                             {
-                                id: 'background',
-                                type: 'background',
-                                paint: { 'background-color': '#0B0E14' }
-                            },
-                            {
-                                id: 'landuse',
-                                type: 'fill',
-                                source: 'local-mbtiles',
-                                'source-layer': 'landuse',
-                                paint: { 'fill-color': '#0f141f' }
-                            },
-                            {
-                                id: 'water',
-                                type: 'fill',
-                                source: 'local-mbtiles',
-                                'source-layer': 'water',
-                                paint: { 'fill-color': '#172033' }
-                            },
-                            // Roads
-                            {
-                                id: 'transportation',
-                                type: 'line',
-                                source: 'local-mbtiles',
-                                'source-layer': 'transportation',
-                                layout: { 'line-join': 'round', 'line-cap': 'round' },
-                                paint: {
-                                    'line-color': '#374151',
-                                    'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.5, 15, 4],
-                                    'line-opacity': 0.5
-                                }
-                            },
-                            // Buildings
-                            {
-                                id: 'building',
-                                type: 'fill',
-                                source: 'local-mbtiles',
-                                'source-layer': 'building',
-                                paint: {
-                                    'fill-color': '#1f2937',
-                                    'fill-opacity': 0.3
-                                }
+                                id: 'osm-tiles',
+                                type: 'raster',
+                                source: 'osm-raster',
+                                minzoom: 0,
+                                maxzoom: 22
                             },
                             // Tiny Moving Dots (Representing Real Traffic/People)
                             {
@@ -157,7 +129,7 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
                                 paint: {
                                     'circle-color': ['get', 'color'],
                                     'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 1, 12, 1.5, 16, 2],
-                                    'circle-opacity': 1
+                                    'circle-opacity': 0.8
                                 }
                             },
                             // Active Vehicle Routes (Brighter)
@@ -168,26 +140,9 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
                                 paint: {
                                     'line-color': ['get', 'color'],
                                     'line-width': 4,
-                                    'line-opacity': 1
+                                    'line-opacity': 0.9
                                 },
                                 layout: { 'line-cap': 'round', 'line-join': 'round' }
-                            },
-                            // Place Labels
-                            {
-                                id: 'place_label',
-                                type: 'symbol',
-                                source: 'local-mbtiles',
-                                'source-layer': 'place',
-                                layout: {
-                                    'text-field': '{name:latin}',
-                                    'text-size': 12,
-                                    'text-font': ['Open Sans Bold']
-                                },
-                                paint: {
-                                    'text-color': '#9ca3af',
-                                    'text-halo-color': '#1f2937',
-                                    'text-halo-width': 1
-                                }
                             }
                         ]
                     },
@@ -619,7 +574,7 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
     }, [incidents, showIncidents, isMapReady]);
 
     return (
-        <Card className="col-span-1 lg:col-span-2 relative h-full w-full overflow-hidden bg-[#0c1018] border-white/10 !p-0 shadow-2xl group">
+        <Card className="col-span-1 lg:col-span-2 relative h-full w-full overflow-hidden bg-[#0c1018] border-white/10 p-0! shadow-2xl group">
              <style jsx global>{`
                 @keyframes pulse-gl {
                     0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }

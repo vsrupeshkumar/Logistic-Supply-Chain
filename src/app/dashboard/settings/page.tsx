@@ -33,7 +33,7 @@ export default function SettingsPage() {
                     status: v.status,
                     fuel: v.fuel,
                     efficiency: v.efficiency,
-                    location: v.currentLocation,
+                    location: v.location,
                 })),
                 zones: zones.map(z => ({
                     id: z.id,
@@ -45,7 +45,7 @@ export default function SettingsPage() {
                     type: i.type,
                     location: i.location,
                     description: i.description,
-                    timestamp: i.timestamp,
+                    severity: i.severity,
                 })),
                 stats: {
                     totalVehicles: vehicles.length,

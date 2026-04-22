@@ -3,23 +3,30 @@ import path from 'path';
 import fs from 'fs';
 
 // Singleton connection to MBTiles
-// Try to be smart about finding the file
-const FILENAME = 'osm-2020-02-10-v3.11_india_bengaluru.mbtiles';
+// Configuration: Set your MBTiles filename here or via environment variable
+const FILENAME = process.env.MBTILES_FILENAME || 'osm-2020-02-10-v3.11_india_bengaluru.mbtiles';
 const MBTILES_PATH = path.join(process.cwd(), FILENAME);
 
 const globalForTiles = globalThis as unknown as {
   tilesDb: Database.Database | undefined;
+  tilesDbChecked?: boolean;
 };
 
-export function getTilesDb() {
+export function getTilesDb(): Database.Database | null {
   if (!globalForTiles.tilesDb) {
-    console.log('🗺️ Opening MBTiles database:', MBTILES_PATH);
     
     if (!fs.existsSync(MBTILES_PATH)) {
-        console.error(`❌ MBTiles file NOT FOUND at: ${MBTILES_PATH}`);
-        console.error(`   Please ensure '${FILENAME}' is in the project root.`);
-        throw new Error(`MBTiles file not found: ${MBTILES_PATH}`);
+        // Don't spam console - only log once
+        if (!globalForTiles.tilesDbChecked) {
+            console.log('⚠️  MBTiles file not found, using CDN tiles instead');
+            console.log(`   Expected: ${MBTILES_PATH}`);
+            console.log('   💡 Run "npm run check:mbtiles" for setup instructions');
+            (globalForTiles as any).tilesDbChecked = true;
+        }
+        return null;
     }
+    
+    console.log('🗺️ Opening MBTiles database:', MBTILES_PATH);
 
     try {
         globalForTiles.tilesDb = new Database(MBTILES_PATH, { 
@@ -27,7 +34,14 @@ export function getTilesDb() {
             fileMustExist: true,
             timeout: 5000 
         });
-        console.log('✅ MBTiles database opened successfully');
+        
+        // Verify it's a valid MBTiles database
+        const metadata = globalForTiles.tilesDb.prepare('SELECT count(*) as count FROM metadata').get() as { count: number };
+        const tileCount = globalForTiles.tilesDb.prepare('SELECT count(*) as count FROM tiles').get() as { count: number };
+        
+        console.log(`✅ MBTiles database opened successfully`);
+        console.log(`   📊 Metadata entries: ${metadata.count}`);
+        console.log(`   🗺️  Total tiles: ${tileCount.count.toLocaleString()}`);
     } catch (e) {
         console.error('❌ Failed to open MBTiles:', e);
         throw e;

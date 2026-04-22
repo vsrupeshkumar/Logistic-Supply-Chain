@@ -82,7 +82,7 @@ SELECT type, severity, description FROM incidents WHERE status = 'active';
                       │ API calls
                       │
 ┌─────────────────────────────────────────────────────┐
-│         Frontend (React + Leaflet)                  │
+│         Frontend (React + MapLibre GL)              │
 │  • Real-time vehicle markers on map                 │
 │  • Stats dashboard                                  │
 │  • AI decision logs                                 │

@@ -92,7 +92,7 @@ export const db = {
   // Vehicles
   getVehicles() {
     const db = getDb();
-    return db.prepare('SELECT * FROM vehicles ORDER BY updated_at DESC').all();
+    return db.prepare('SELECT * FROM vehicles ORDER BY created_at ASC').all();
   },
   
   getVehicle(id: string) {

@@ -19,7 +19,7 @@ import {
     Box
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -66,20 +66,22 @@ export default function DashboardPage() {
     const lowCongestionZones = zones.filter(z => z.congestionLevel < 40).length;
 
     // Add trend indicators to zones (simulate based on congestion level)
-    const zonesWithTrend = zones.map(zone => {
-        const rand = Math.random();
+    const zonesWithTrend = useMemo(() => zones.map(zone => {
+        // Deterministic trend based on zone ID to avoid React purity violations
+        const seed = zone.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const pseudoRandom = (seed % 100) / 100;
         let trend: 'up' | 'down' | 'stable';
         
         if (zone.congestionLevel >= 70) {
-            trend = rand > 0.3 ? 'up' : (rand > 0.15 ? 'stable' : 'down');
+            trend = pseudoRandom > 0.3 ? 'up' : (pseudoRandom > 0.15 ? 'stable' : 'down');
         } else if (zone.congestionLevel >= 40) {
-            trend = rand > 0.5 ? 'stable' : (rand > 0.25 ? 'up' : 'down');
+            trend = pseudoRandom > 0.5 ? 'stable' : (pseudoRandom > 0.25 ? 'up' : 'down');
         } else {
-            trend = rand > 0.3 ? 'down' : (rand > 0.15 ? 'stable' : 'up');
+            trend = pseudoRandom > 0.3 ? 'down' : (pseudoRandom > 0.15 ? 'stable' : 'up');
         }
         
         return { ...zone, trend };
-    });
+    }), [zones]);
 
     // Get recent incidents
     const recentIncidents = incidents.slice(0, 5);
@@ -129,7 +131,7 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                 >
-                    <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 hover:border-blue-500/40 transition-all">
+                    <Card className="p-6 bg-linear-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 hover:border-blue-500/40 transition-all">
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
                                 <p className="text-sm text-[--foreground]/60 mb-2">Total Fleet</p>
@@ -154,7 +156,7 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                 >
-                    <Card className="p-6 bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 hover:border-green-500/40 transition-all">
+                    <Card className="p-6 bg-linear-to-br from-green-500/10 to-green-500/5 border-green-500/20 hover:border-green-500/40 transition-all">
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
                                 <p className="text-sm text-[--foreground]/60 mb-2">Fleet Efficiency</p>
@@ -186,7 +188,7 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                 >
-                    <Card className="p-6 bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20 hover:border-orange-500/40 transition-all">
+                    <Card className="p-6 bg-linear-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20 hover:border-orange-500/40 transition-all">
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
                                 <p className="text-sm text-[--foreground]/60 mb-2">Traffic Congestion</p>
@@ -218,7 +220,7 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
                 >
-                    <Card className="p-6 bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20 hover:border-red-500/40 transition-all">
+                    <Card className="p-6 bg-linear-to-br from-red-500/10 to-red-500/5 border-red-500/20 hover:border-red-500/40 transition-all">
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
                                 <p className="text-sm text-[--foreground]/60 mb-2">Active Incidents</p>
@@ -260,7 +262,7 @@ export default function DashboardPage() {
                                         style={{ width: `${(trucks / stats.totalVehicles) * 100}%` }}
                                     ></div>
                                 </div>
-                                <span className="font-bold text-lg min-w-[40px] text-right">{trucks}</span>
+                                <span className="font-bold text-lg min-w-10 text-right">{trucks}</span>
                             </div>
                         </div>
 
@@ -276,7 +278,7 @@ export default function DashboardPage() {
                                         style={{ width: `${(cars / stats.totalVehicles) * 100}%` }}
                                     ></div>
                                 </div>
-                                <span className="font-bold text-lg min-w-[40px] text-right">{cars}</span>
+                                <span className="font-bold text-lg min-w-10 text-right">{cars}</span>
                             </div>
                         </div>
 
@@ -292,7 +294,7 @@ export default function DashboardPage() {
                                         style={{ width: `${(vans / stats.totalVehicles) * 100}%` }}
                                     ></div>
                                 </div>
-                                <span className="font-bold text-lg min-w-[40px] text-right">{vans}</span>
+                                <span className="font-bold text-lg min-w-10 text-right">{vans}</span>
                             </div>
                         </div>
 
@@ -311,6 +313,7 @@ export default function DashboardPage() {
                                     <p className="text-xs text-[--foreground]/60">Maintenance</p>
                                 </div>
                             </div>
+                            
                         </div>
                     </div>
                 </Card>
@@ -371,7 +374,7 @@ export default function DashboardPage() {
 
             {/* Traffic Zones & Recent Incidents */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="p-6 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm">
+                <Card className="p-6 bg-linear-to-br from-white/5 to-white/2 backdrop-blur-sm">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-bold flex items-center gap-2">
                             <div className="p-2 bg-[--color-primary]/20 rounded-lg">
@@ -398,8 +401,8 @@ export default function DashboardPage() {
                             transition={{ delay: 0.1 }}
                             className="relative overflow-hidden group"
                         >
-                            <div className="text-center p-4 bg-gradient-to-br from-red-500/20 to-red-500/5 rounded-xl border-2 border-red-500/30 hover:border-red-500/50 transition-all cursor-pointer hover:scale-105 transform duration-200">
-                                <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="text-center p-4 bg-linear-to-br from-red-500/20 to-red-500/5 rounded-xl border-2 border-red-500/30 hover:border-red-500/50 transition-all cursor-pointer hover:scale-105 transform duration-200">
+                                <div className="absolute inset-0 bg-linear-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 <p className="text-3xl font-black text-red-400 mb-1 relative z-10">{highCongestionZones}</p>
                                 <p className="text-xs font-bold text-red-300 uppercase tracking-wider relative z-10">High</p>
                                 <p className="text-[10px] text-[--foreground]/40 mt-1 relative z-10">≥70% congested</p>
@@ -412,8 +415,8 @@ export default function DashboardPage() {
                             transition={{ delay: 0.2 }}
                             className="relative overflow-hidden group"
                         >
-                            <div className="text-center p-4 bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 rounded-xl border-2 border-yellow-500/30 hover:border-yellow-500/50 transition-all cursor-pointer hover:scale-105 transform duration-200">
-                                <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="text-center p-4 bg-linear-to-br from-yellow-500/20 to-yellow-500/5 rounded-xl border-2 border-yellow-500/30 hover:border-yellow-500/50 transition-all cursor-pointer hover:scale-105 transform duration-200">
+                                <div className="absolute inset-0 bg-linear-to-br from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 <p className="text-3xl font-black text-yellow-400 mb-1 relative z-10">{mediumCongestionZones}</p>
                                 <p className="text-xs font-bold text-yellow-300 uppercase tracking-wider relative z-10">Medium</p>
                                 <p className="text-[10px] text-[--foreground]/40 mt-1 relative z-10">40-69% congested</p>
@@ -426,8 +429,8 @@ export default function DashboardPage() {
                             transition={{ delay: 0.3 }}
                             className="relative overflow-hidden group"
                         >
-                            <div className="text-center p-4 bg-gradient-to-br from-green-500/20 to-green-500/5 rounded-xl border-2 border-green-500/30 hover:border-green-500/50 transition-all cursor-pointer hover:scale-105 transform duration-200">
-                                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="text-center p-4 bg-linear-to-br from-green-500/20 to-green-500/5 rounded-xl border-2 border-green-500/30 hover:border-green-500/50 transition-all cursor-pointer hover:scale-105 transform duration-200">
+                                <div className="absolute inset-0 bg-linear-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 <p className="text-3xl font-black text-green-400 mb-1 relative z-10">{lowCongestionZones}</p>
                                 <p className="text-xs font-bold text-green-300 uppercase tracking-wider relative z-10">Low</p>
                                 <p className="text-[10px] text-[--foreground]/40 mt-1 relative z-10">&lt;40% congested</p>
@@ -436,7 +439,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Zone List with Enhanced UI */}
-                    <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3 max-h-70 overflow-y-auto pr-2 custom-scrollbar">
                         {zonesWithTrend.slice(0, 8).map((zone, idx) => (
                             <motion.div
                                 key={zone.id}
@@ -447,10 +450,10 @@ export default function DashboardPage() {
                             >
                                 <div className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
                                     zone.congestionLevel >= 70 
-                                        ? 'bg-gradient-to-r from-red-500/10 to-red-500/5 border-red-500/30 hover:border-red-500/50 hover:from-red-500/15 hover:to-red-500/10' 
+                                        ? 'bg-linear-to-r from-red-500/10 to-red-500/5 border-red-500/30 hover:border-red-500/50 hover:from-red-500/15 hover:to-red-500/10' 
                                         : zone.congestionLevel >= 40 
-                                        ? 'bg-gradient-to-r from-yellow-500/10 to-yellow-500/5 border-yellow-500/30 hover:border-yellow-500/50 hover:from-yellow-500/15 hover:to-yellow-500/10' 
-                                        : 'bg-gradient-to-r from-green-500/10 to-green-500/5 border-green-500/30 hover:border-green-500/50 hover:from-green-500/15 hover:to-green-500/10'
+                                        ? 'bg-linear-to-r from-yellow-500/10 to-yellow-500/5 border-yellow-500/30 hover:border-yellow-500/50 hover:from-yellow-500/15 hover:to-yellow-500/10' 
+                                        : 'bg-linear-to-r from-green-500/10 to-green-500/5 border-green-500/30 hover:border-green-500/50 hover:from-green-500/15 hover:to-green-500/10'
                                 }`}>
                                     {/* Zone Info */}
                                     <div className="flex items-center gap-3 flex-1">
@@ -468,15 +471,15 @@ export default function DashboardPage() {
                                         <div className="flex-1">
                                             <p className="font-bold text-sm mb-0.5">{zone.area}</p>
                                             <div className="flex items-center gap-2">
-                                                <div className="flex-1 max-w-[160px] bg-black/20 rounded-full h-2 overflow-hidden border border-white/10">
+                                                <div className="flex-1 max-w-40 bg-black/20 rounded-full h-2 overflow-hidden border border-white/10">
                                                     <motion.div
                                                         initial={{ width: 0 }}
                                                         animate={{ width: `${zone.congestionLevel}%` }}
                                                         transition={{ duration: 1, delay: idx * 0.1 }}
                                                         className={`h-full rounded-full ${
-                                                            zone.congestionLevel >= 70 ? 'bg-gradient-to-r from-red-600 to-red-400' :
-                                                            zone.congestionLevel >= 40 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
-                                                            'bg-gradient-to-r from-green-600 to-green-400'
+                                                            zone.congestionLevel >= 70 ? 'bg-linear-to-r from-red-600 to-red-400' :
+                                                            zone.congestionLevel >= 40 ? 'bg-linear-to-r from-yellow-600 to-yellow-400' :
+                                                            'bg-linear-to-r from-green-600 to-green-400'
                                                         }`}
                                                     />
                                                 </div>
@@ -502,7 +505,7 @@ export default function DashboardPage() {
                                         </div>
 
                                         {/* Percentage Badge */}
-                                        <div className={`px-3 py-1.5 rounded-lg font-black text-sm min-w-[55px] text-center ${
+                                        <div className={`px-3 py-1.5 rounded-lg font-black text-sm min-w-13.75 text-center ${
                                             zone.congestionLevel >= 70 
                                                 ? 'bg-red-500/30 text-red-300 border-2 border-red-500/50' 
                                                 : zone.congestionLevel >= 40 
@@ -568,7 +571,7 @@ export default function DashboardPage() {
                             <p className="text-xs mt-1">All systems operating normally</p>
                         </div>
                     ) : (
-                        <div className="space-y-3 max-h-[248px] overflow-y-auto">
+                        <div className="space-y-3 max-h-62 overflow-y-auto">
                             {recentIncidents.map((incident) => (
                                 <div 
                                     key={incident.id}

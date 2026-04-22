@@ -131,7 +131,7 @@ export function VehicleList() {
                                         <Badge variant={
                                             vehicle.status === 'active' || vehicle.status === 'in-transit' ? 'success' : 
                                             vehicle.status === 'idle' ? 'warning' : 
-                                            vehicle.status === 'refueling' ? 'danger' : 'neutral'
+                                            vehicle.status === 'refueling' ? 'danger' : 'default'
                                         }>
                                             {vehicle.status}
                                         </Badge>

@@ -138,7 +138,19 @@ export function TrafficProvider({ children }: { children: ReactNode }) {
             const data = await res.json();
             
             // Only update if we have meaningful data
-            if (data.vehicles) setVehicles(data.vehicles);
+            if (data.vehicles) {
+                setVehicles(prev => {
+                    data.vehicles.forEach((newV: Vehicle) => {
+                        const oldV = prev.find(v => v.id === newV.id);
+                        if (oldV && oldV.status === 'in-transit' && newV.status === 'idle') {
+                            setTimeout(() => {
+                                addNotification(`🏁 Vehicle ${newV.name} has reached its destination!`, 'success');
+                            }, 0);
+                        }
+                    });
+                    return data.vehicles;
+                });
+            }
             if (data.zones) setZones(data.zones);
             if (data.incidents) setIncidents(data.incidents);
             
@@ -147,7 +159,7 @@ export function TrafficProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('Sync failed:', error);
         }
-    }, []);
+    }, [addNotification]);
 
     // ---- Vehicle Operations ----
     const addVehicle = useCallback((vehicleData: Omit<Vehicle, 'id' | 'number'>) => {

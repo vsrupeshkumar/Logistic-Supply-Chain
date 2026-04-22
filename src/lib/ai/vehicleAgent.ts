@@ -4,9 +4,9 @@ import { findOptimalRoute, type OptimizedRoute } from '../routing/routeOptimizat
 import type { TrafficIncident } from '../traffic/freeTrafficService';
 
 // OpenRouter API configuration
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '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';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const MODEL = 'liquid/lfm-2.5-1.2b-thinking:free'; // LFM-2.5 free model for intelligent decision making
+const MODEL = 'openai/gpt-oss-20b:free';
 
 export interface DecisionContext {
   vehicle: Vehicle;
@@ -261,14 +261,14 @@ Think like a REAL HUMAN DRIVER in Bangalore traffic. Consider your personality, 
     
     // Heuristic decision tree
     if (isEmergency) {
-      return `ACTION: refuel\nREASONING: [FALLBACK] Fuel low. Finding station.\nTARGET_SPEED: 30\nPRIORITY: critical\nCONFIDENCE: 1.0`;
+      return `ACTION: refuel\nREASONING: I noticed the fuel gauge is extremely low. I need to find a station immediately or risk breaking down.\nTARGET_SPEED: 30\nPRIORITY: critical\nCONFIDENCE: 1.0`;
     }
     
     if (inTraffic) {
-      return `ACTION: reroute\nREASONING: [FALLBACK] Heavy traffic. Seeking alternative.\nTARGET_SPEED: 35\nPRIORITY: medium\nCONFIDENCE: 0.85`;
+      return `ACTION: reroute\nREASONING: Traffic ahead is incredibly heavy. I'm going to find an alternative street to keep moving.\nTARGET_SPEED: 35\nPRIORITY: medium\nCONFIDENCE: 0.85`;
     }
 
-    return `ACTION: continue\nREASONING: [FALLBACK] Conditions normal. Proceeding.\nTARGET_SPEED: 60\nPRIORITY: low\nCONFIDENCE: 0.95`;
+    return `ACTION: continue\nREASONING: The road conditions are normal. I will proceed with the current route at a steady speed.\nTARGET_SPEED: 60\nPRIORITY: low\nCONFIDENCE: 0.95`;
   }
 
   /**
