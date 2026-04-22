@@ -32,3 +32,4 @@ try {
   console.error('Failed to open database:', err);
 }
 
+

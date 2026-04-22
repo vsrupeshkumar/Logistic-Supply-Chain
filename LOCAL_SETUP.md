@@ -192,3 +192,4 @@ db.logAIDecision({
 **Next**: Connect simulation controller to database  
 **Environment**: Local development (no cloud dependencies)
 
+

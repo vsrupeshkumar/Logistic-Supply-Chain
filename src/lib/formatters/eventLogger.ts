@@ -145,3 +145,4 @@ export const EVENT_TYPE_LABELS: Record<AIEventType, string> = {
   arrival:     'ARRIVAL',
 };
 
+

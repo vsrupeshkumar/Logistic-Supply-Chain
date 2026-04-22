@@ -49,3 +49,4 @@ export function getTilesDb(): Database.Database | null {
   }
   return globalForTiles.tilesDb;
 }
+

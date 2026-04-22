@@ -345,3 +345,4 @@ export function estimateFuelConsumption(
   return Math.min(100, fuelPercentage); // Cap at 100%
 }
 
+

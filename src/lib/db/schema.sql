@@ -235,3 +235,4 @@ CREATE TRIGGER update_routes_updated_at BEFORE UPDATE ON routes FOR EACH ROW EXE
 CREATE TRIGGER update_environment_updated_at BEFORE UPDATE ON environment FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_fuel_stations_updated_at BEFORE UPDATE ON fuel_stations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+

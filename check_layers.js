@@ -29,3 +29,4 @@ if (row && row.value) {
     console.log("No json metadata found");
 }
 db.close();
+

@@ -72,3 +72,4 @@ INSERT OR IGNORE INTO incidents (id, type, severity, location_lat, location_lng,
 ('INC-002', 'construction', 'medium', 12.9750, 77.6060, 500, 'active', 'Metro construction work on MG Road, single lane traffic', 0.6),
 ('INC-003', 'congestion', 'low', 13.0358, 77.5970, 600, 'active', 'Heavy traffic near Hebbal Flyover during evening hours', 0.7);
 
+

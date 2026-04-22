@@ -440,3 +440,4 @@ export function getTrafficSummary(): {
 
 console.log('✅ FREE UNLIMITED Traffic Simulation System loaded - No API limits!');
 
+

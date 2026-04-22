@@ -70,3 +70,4 @@ UPDATE zones SET vehicle_count = (
                POWER((v.location_lng - zones.center_lng) * 111000, 2)) < zones.radius_meters
 );
 
+

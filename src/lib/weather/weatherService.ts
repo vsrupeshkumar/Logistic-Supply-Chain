@@ -280,3 +280,4 @@ export function getWeatherDescription(weather: WeatherData): string {
   return `${weather.description} - ${impacts.join(', ')}`;
 }
 
+

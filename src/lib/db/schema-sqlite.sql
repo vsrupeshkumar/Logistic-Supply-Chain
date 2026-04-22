@@ -266,3 +266,4 @@ BEGIN
     UPDATE fuel_stations SET updated_at = strftime('%s', 'now') WHERE id = NEW.id;
 END;
 
+

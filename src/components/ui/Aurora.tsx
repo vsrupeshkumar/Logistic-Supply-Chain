@@ -213,3 +213,4 @@ export default function Aurora(props: AuroraProps) {
   return <div ref={ctnDom} className="w-full h-full absolute inset-0 transform translate-z-0" />;
 }
 
+

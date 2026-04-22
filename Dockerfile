@@ -37,3 +37,4 @@ ENV DATABASE_PATH=/var/data/trafficmaxxers.db
 
 CMD ["node", "server.js"]
 
+
