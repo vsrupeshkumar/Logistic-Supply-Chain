@@ -2,7 +2,7 @@ services:
   - type: web
     name: trafficmaxxers
     runtime: docker
-    repo: https://github.com/Anbu-00001/Logistic-supplychain
+    repo: https://github.com/rakeshselvaraj0108/cepheus
     branch: main
     dockerfilePath: ./Dockerfile
     dockerContext: .
