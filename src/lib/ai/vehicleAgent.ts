@@ -6,7 +6,7 @@ import type { TrafficIncident } from '../traffic/freeTrafficService';
 // OpenRouter API configuration
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const MODEL = 'openai/gpt-oss-20b:free';
+const MODEL = 'openai/gpt-oss-120b:free';
 
 export interface DecisionContext {
   vehicle: Vehicle;

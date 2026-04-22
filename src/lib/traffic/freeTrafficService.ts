@@ -13,6 +13,7 @@
  */
 
 import * as turf from '@turf/turf';
+import { db } from '../db/database';
 
 // Bangalore bounding box
 const BANGALORE_BOUNDS = {
@@ -74,13 +75,24 @@ export async function fetchTrafficIncidents(
   const isWeekday = currentDay >= 1 && currentDay <= 5;
   const isRushHour = (currentHour >= 7 && currentHour <= 10) || (currentHour >= 17 && currentHour <= 20);
   
-  // Remove expired incidents (incidents last 15-60 minutes)
+  // Get active incidents from database
+  let dbIncidents = db.getActiveIncidents();
   const now = new Date();
-  activeIncidents = activeIncidents.filter(incident => {
-    const age = now.getTime() - incident.startTime.getTime();
-    const maxAge = incident.severity === 'critical' ? 60 : incident.severity === 'high' ? 45 : 30;
-    return age < maxAge * 60 * 1000;
-  });
+  
+  // Remove expired incidents
+  for (const incident of dbIncidents as any[]) {
+      const reportedAt = new Date(incident.reported_at * 1000);
+      const age = now.getTime() - reportedAt.getTime();
+      const maxAge = incident.severity === 'critical' ? 60 : incident.severity === 'high' ? 45 : 30;
+      
+      if (age > maxAge * 60 * 1000) {
+          db.resolveIncident(incident.id);
+          console.log(`✅ Incident resolved: ${incident.id}`);
+      }
+  }
+  
+  // Re-fetch after cleanup
+  dbIncidents = db.getActiveIncidents();
   
   // Calculate incident spawn probability
   let spawnProbability = 0.05; // Base 5% chance per check
@@ -97,14 +109,37 @@ export async function fetchTrafficIncidents(
   if (weatherCondition === 'fog') spawnProbability *= 2.5;
   if (weatherCondition === 'storm') spawnProbability *= 4.0;
   
-  // Spawn new incidents - DISABLED for hackathon demo to prevent spam
-  // if (Math.random() < spawnProbability) {
-  //   const newIncident = generateRealisticIncident(weatherCondition, isRushHour);
-  //   activeIncidents.push(newIncident);
-  //   console.log(`🚨 New incident: ${newIncident.type} at ${newIncident.affectedRoads[0]} (${newIncident.severity})`);
-  // }
+  // Cap the maximum concurrent incidents to avoid overwhelming the map
+  if (dbIncidents.length < 8 && Math.random() < spawnProbability) {
+    const newInc = generateRealisticIncident(weatherCondition, isRushHour);
+    
+    db.createIncident({
+        id: newInc.id,
+        type: newInc.type,
+        severity: newInc.severity,
+        location: newInc.location,
+        affectedRadius: 800,
+        description: newInc.description,
+        speedReduction: newInc.severity === 'critical' ? 0.3 : newInc.severity === 'high' ? 0.5 : 0.7
+    });
+    
+    console.log(`🚨 New Live Incident generated: ${newInc.type} at ${newInc.affectedRoads[0]} (${newInc.severity})`);
+    
+    // Re-fetch to include the newly generated one
+    dbIncidents = db.getActiveIncidents();
+  }
   
-  return [...activeIncidents];
+  // Map DB format back to TrafficIncident format expected by engine
+  return (dbIncidents as any[]).map(i => ({
+      id: i.id,
+      type: i.type,
+      description: i.description,
+      location: { lat: i.location_lat, lng: i.location_lng },
+      severity: i.severity,
+      delayMinutes: 15,
+      affectedRoads: [],
+      startTime: new Date(i.reported_at * 1000)
+  }));
 }
 
 /**

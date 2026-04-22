@@ -1,9 +1,10 @@
 'use client';
 import { Card } from '@/components/ui/Card';
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Activity } from 'lucide-react';
+import { MapPin, Activity, AlertTriangle } from 'lucide-react';
 import type maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { useTraffic } from '@/lib/TrafficContext';
 
 import trafficPatternsRaw from '@/lib/data/trafficPatterns.json';
 
@@ -18,6 +19,7 @@ interface RealTrafficMapProps {
 const lerp = (start: number, end: number, factor: number) => start + (end - start) * factor;
 
 export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: RealTrafficMapProps) {
+    const { stressTestResult } = useTraffic();
     const mapContainer = useRef<HTMLDivElement>(null);
     const mapInstance = useRef<maplibregl.Map | null>(null);
     const mapLibRef = useRef<typeof maplibregl | null>(null);
@@ -26,15 +28,24 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
 
     const [isMapReady, setIsMapReady] = useState(false);
     
-    const [vehicles, setVehicles] = useState<any[]>([]);
-    const [incidents, setIncidents] = useState<any[]>([]);
-    const [zones, setZones] = useState<any[]>([]);
-    const [fuelStations, setFuelStations] = useState<any[]>([]);
-    const [trafficData, setTrafficData] = useState<any>(null);
+    // Default live state
+    const [liveVehicles, setLiveVehicles] = useState<any[]>([]);
+    const [liveIncidents, setLiveIncidents] = useState<any[]>([]);
+    const [liveZones, setLiveZones] = useState<any[]>([]);
+    const [liveFuelStations, setLiveFuelStations] = useState<any[]>([]);
+    const [liveTrafficData, setLiveTrafficData] = useState<any>(null);
+
+    // Context-switched state
+    const vehicles = stressTestResult?.vehicles || liveVehicles;
+    const incidents = stressTestResult?.incidents || liveIncidents;
+    const zones = stressTestResult?.zones || liveZones;
+    const fuelStations = stressTestResult ? [] : liveFuelStations;
+    const trafficData = stressTestResult?.trafficData || liveTrafficData;
 
     const animationFrameRef = useRef<number>(0);
     const vehiclePositions = useRef<Map<string, { lat: number; lng: number }>>(new Map());
     const fuelMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+    const warehouseMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
 
     const START_LNG = 77.5946;
     const START_LAT = 12.9716;
@@ -42,6 +53,8 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
 
     // 1. Fetch Loop (Increased frequency)
     useEffect(() => {
+        if (stressTestResult) return; // Pause live updates during simulation
+
         const fetchData = async () => {
             try {
                 const [vehRes, trafRes] = await Promise.all([
@@ -53,13 +66,13 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
                 const trafData = await trafRes.json();
 
                 if (vehData.success) {
-                    setVehicles(vehData.vehicles || []);
+                    setLiveVehicles(vehData.vehicles || []);
                 }
                 if (trafData.success) {
-                    setIncidents(trafData.incidents || []);
-                    setZones(trafData.zones || []);
-                    setFuelStations(trafData.fuelStations || []);
-                    setTrafficData(trafData);
+                    setLiveIncidents(trafData.incidents || []);
+                    setLiveZones(trafData.zones || []);
+                    setLiveFuelStations(trafData.fuelStations || []);
+                    setLiveTrafficData(trafData);
                 }
             } catch (error) {
                 console.error('Failed to fetch data:', error);
@@ -67,9 +80,9 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
         };
 
         fetchData();
-        const interval = setInterval(fetchData, 1000); 
+        const interval = setInterval(fetchData, 2000); 
         return () => clearInterval(interval);
-    }, []);
+    }, [stressTestResult]);
 
     // 2. Initialize MapLibre
     useEffect(() => {
@@ -83,8 +96,11 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
 
                 console.log('🗺️ Initializing MapLibre...');
 
+                // Ensure container still exists after async load
+                if (!mapContainer.current) return;
+
                 const map = new maplibregl.Map({
-                    container: mapContainer.current!,
+                    container: mapContainer.current,
                     style: {
                         version: 8,
                         sources: {
@@ -212,6 +228,48 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
         });
 
     }, [isMapReady, fuelStations]);
+
+    // 2.1.5 Render Warehouses (Fleet Bases)
+    useEffect(() => {
+        if (!isMapReady || !mapInstance.current || !mapLibRef.current) return;
+
+        const WAREHOUSES = [
+           { id: 'wh-1', name: "Peenya Industrial Hub", lat: 13.0285, lng: 77.5197, capacity: 500 },
+           { id: 'wh-2', name: "Whitefield Logistics", lat: 12.9698, lng: 77.7499, capacity: 1200 },
+           { id: 'wh-3', name: "Bommasandra Hub", lat: 12.8160, lng: 77.6811, capacity: 800 },
+           { id: 'wh-4', name: "Hoskote Cargo Terminal", lat: 13.0722, lng: 77.7896, capacity: 2000 }
+        ];
+
+        WAREHOUSES.forEach(warehouse => {
+             if (warehouseMarkersRef.current.has(warehouse.id)) return;
+
+             const el = document.createElement('div');
+             el.className = 'warehouse-marker';
+             // Custom Warehouse Icon (Box/Home style)
+             el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#3b82f6" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
+             
+             // Create Popup
+             const popup = new mapLibRef.current!.Popup({ offset: 25 })
+                .setHTML(`
+                    <div style="color: #000; padding: 5px;">
+                        <h3 style="font-weight: bold; margin-bottom: 5px; color: #1e3a8a;">${warehouse.name}</h3>
+                        <div style="font-size: 0.9em;">
+                            <p>🏭 Base: <b>Idle & Maintenance Hub</b></p>
+                            <p>📦 Cargo Capacity: ${warehouse.capacity} units</p>
+                            <p style="font-size: 0.8em; color: #666; margin-top: 4px;">Vehicles route here when idle or needing repairs.</p>
+                        </div>
+                    </div>
+                `);
+
+             const marker = new mapLibRef.current!.Marker({ element: el })
+                .setLngLat([warehouse.lng, warehouse.lat])
+                .setPopup(popup)
+                .addTo(mapInstance.current!);
+
+             warehouseMarkersRef.current.set(warehouse.id, marker);
+        });
+
+    }, [isMapReady]);
 
     // 2.2 Dynamic Traffic Dots based on Historical CSV Data
     // Updated Animation Effect
@@ -411,23 +469,48 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
             }
 
             if (!currentMarkers.has(vehicle.id)) {
-                // Custom Marker
-                const el = document.createElement('div');
-                el.className = 'vehicle-marker-gl';
-                el.style.width = '12px'; // Smaller for better scale
-                el.style.height = '12px';
-                el.style.backgroundColor = color;
-                el.style.border = '2px solid white';
-                el.style.borderRadius = '50%';
-                el.style.boxShadow = `0 0 8px ${color}`;
-                el.style.cursor = 'pointer';
+                // Custom Marker Container
+                const containerEl = document.createElement('div');
+                containerEl.className = 'vehicle-marker-container';
+                containerEl.style.display = 'flex';
+                containerEl.style.flexDirection = 'column';
+                containerEl.style.alignItems = 'center';
+                containerEl.style.transform = 'translateY(-50%)'; // Center bottom
+                
+                // Vehicle Dot
+                const dotEl = document.createElement('div');
+                dotEl.className = 'vehicle-marker-gl';
+                dotEl.style.width = '14px'; 
+                dotEl.style.height = '14px';
+                dotEl.style.backgroundColor = color;
+                dotEl.style.border = '2px solid white';
+                dotEl.style.borderRadius = '50%';
+                dotEl.style.boxShadow = `0 0 10px ${color}`;
+                dotEl.style.cursor = 'pointer';
+                
+                // Name Label
+                const labelEl = document.createElement('div');
+                labelEl.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                labelEl.style.color = '#fff';
+                labelEl.style.padding = '2px 6px';
+                labelEl.style.borderRadius = '4px';
+                labelEl.style.fontSize = '10px';
+                labelEl.style.fontWeight = 'bold';
+                labelEl.style.marginTop = '4px';
+                labelEl.style.whiteSpace = 'nowrap';
+                labelEl.style.fontFamily = 'monospace';
+                labelEl.style.border = `1px solid ${color}`;
+                labelEl.innerText = vehicle.name;
+
+                containerEl.appendChild(dotEl);
+                containerEl.appendChild(labelEl);
                 
                 // Pure CSS Pulse
                 if(vehicle.status === 'in-transit') {
-                     el.style.animation = 'pulse-gl 1.5s infinite';
+                     dotEl.style.animation = 'pulse-gl 1.5s infinite';
                 }
 
-                const marker = new lib.Marker({ element: el })
+                const marker = new lib.Marker({ element: containerEl })
                     .setLngLat(lngLat)
                     .setPopup(new lib.Popup({ offset: 15, closeButton: false }))
                     .addTo(map);
@@ -464,7 +547,21 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
             vehicles.forEach(vehicle => {
                 if (!markers.has(vehicle.id)) return;
                 
-                const target = vehicle.location;
+                let target = vehicle.location;
+
+                // Fake movement during simulation so they appear to be driving the new route
+                if (stressTestResult && vehicle.status === 'in-transit' && vehicle.currentRoute?.waypoints?.length > 0) {
+                     if (vehicle._simIndex === undefined) vehicle._simIndex = 0;
+                     // Speed depends on vehicle type, trucks slower than cars
+                     const speedFactor = vehicle.type === 'car' ? 0.15 : vehicle.type === 'van' ? 0.1 : 0.06;
+                     
+                     vehicle._simIndex = Math.min(vehicle._simIndex + speedFactor, vehicle.currentRoute.waypoints.length - 1);
+                     const wp = vehicle.currentRoute.waypoints[Math.floor(vehicle._simIndex)];
+                     if (wp) {
+                         target = { lat: wp.lat, lng: wp.lng };
+                     }
+                }
+
                 const current = positions.get(vehicle.id) || target;
 
                 if (!target || isNaN(target.lat) || isNaN(target.lng)) return;
@@ -575,6 +672,13 @@ export function RealTrafficMap({ vehicleFilter = 'all', showIncidents = true }: 
 
     return (
         <Card className="col-span-1 lg:col-span-2 relative h-full w-full overflow-hidden bg-[#0c1018] border-white/10 p-0! shadow-2xl group">
+             {stressTestResult && (
+                 <div className="absolute inset-0 pointer-events-none z-[100] border-4 border-orange-500/50 shadow-[inset_0_0_100px_rgba(249,115,22,0.3)]">
+                     <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-orange-500/90 text-black px-6 py-2 rounded-full font-black tracking-widest text-lg shadow-[0_0_30px_rgba(249,115,22,0.8)] backdrop-blur-md flex items-center gap-2 animate-pulse">
+                        <AlertTriangle className="w-6 h-6" /> SIMULATED
+                     </div>
+                 </div>
+             )}
              <style jsx global>{`
                 @keyframes pulse-gl {
                     0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }

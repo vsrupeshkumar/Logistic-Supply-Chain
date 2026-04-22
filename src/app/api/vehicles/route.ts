@@ -121,6 +121,11 @@ export async function GET(request: NextRequest) {
   try {
     // Ensure simulation is running and using latest version
     const { startSimulation } = await import('@/lib/simulation/vehicleSimulation');
+    const globalForSim = globalThis as any;
+    if (globalForSim.simInterval) {
+        clearInterval(globalForSim.simInterval);
+        globalForSim.simInterval = null;
+    }
     startSimulation();
 
     const vehicles = db.getVehicles();
@@ -251,6 +256,18 @@ export async function PATCH(request: NextRequest) {
         message: 'Vehicle stopped',
         vehicleId,
         newStatus: 'idle'
+      });
+    }
+
+    if (action === 'maintenance') {
+      // Change status to maintenance
+      db.updateVehicleStatus(vehicleId, 'maintenance');
+
+      return NextResponse.json({
+        success: true,
+        message: 'Vehicle sent to maintenance',
+        vehicleId,
+        newStatus: 'maintenance'
       });
     }
 

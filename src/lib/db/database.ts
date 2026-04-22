@@ -1,8 +1,26 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
-// SQLite database path (local file)
-const DB_PATH = path.join(process.cwd(), 'trafficmaxxers.db');
+// SQLite database path handling
+function getDbPath(): string {
+  // Production: use Render's persistent disk
+  if (process.env.DATABASE_PATH) {
+    return process.env.DATABASE_PATH;
+  }
+  // Development: use project root
+  return path.join(process.cwd(), 'trafficmaxxers.db');
+}
+
+function ensureDbDirectory(dbPath: string): void {
+  const fs = require('fs');
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+const DB_PATH = getDbPath();
+ensureDbDirectory(DB_PATH);
 
 // Global singleton database instance
 const globalForDb = globalThis as unknown as {
@@ -13,13 +31,37 @@ const globalForDb = globalThis as unknown as {
 function getDb(): Database.Database {
   if (!globalForDb.simDb) {
     console.log('🔌 Opening SQLite database:', DB_PATH);
-    globalForDb.simDb = new Database(DB_PATH);
+    const db = new Database(DB_PATH);
     
     // Enable foreign keys
-    globalForDb.simDb.pragma('foreign_keys = ON');
+    db.pragma('foreign_keys = ON');
     
     // Enable WAL mode for better performance
-    globalForDb.simDb.pragma('journal_mode = WAL');
+    db.pragma('journal_mode = WAL');
+
+    // Check if tables exist, if not run initialization
+    const tablesExist = db.prepare(
+      "SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name='vehicles'"
+    ).get() as { count: number };
+
+    if (tablesExist.count === 0) {
+      console.log('[DB] Fresh database detected. Running initialization...');
+      const fs = require('fs');
+      
+      const schemaPath = path.join(process.cwd(), 'src/lib/db/schema-sqlite.sql');
+      if (fs.existsSync(schemaPath)) {
+        db.exec(fs.readFileSync(schemaPath, 'utf-8'));
+        console.log('✅ Schema created');
+      }
+      
+      const seedPath = path.join(process.cwd(), 'src/lib/db/seed-sqlite.sql');
+      if (fs.existsSync(seedPath)) {
+        db.exec(fs.readFileSync(seedPath, 'utf-8'));
+        console.log('✅ Seed data inserted');
+      }
+    }
+
+    globalForDb.simDb = db;
   }
   
   return globalForDb.simDb;

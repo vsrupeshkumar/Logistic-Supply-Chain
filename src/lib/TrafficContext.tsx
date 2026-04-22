@@ -53,6 +53,10 @@ interface TrafficContextType {
     lastSyncTime: Date;
     syncData: () => void;
 
+    // Stress Test Simulation
+    stressTestResult: any | null;
+    setStressTestResult: (result: any | null) => void;
+
     // Notifications
     notifications: AppNotification[];
     addNotification: (message: string, type: 'info' | 'warning' | 'danger' | 'success') => void;
@@ -76,6 +80,7 @@ export function TrafficProvider({ children }: { children: ReactNode }) {
     const [incidents, setIncidents] = useState<Incident[]>([]);
     const [isSimulating, setIsSimulating] = useState(true);
     const [lastSyncTime, setLastSyncTime] = useState(new Date());
+    const [stressTestResult, setStressTestResult] = useState<any | null>(null);
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [settings, setSettings] = useState<AppSettings>({
         notifications: true,
@@ -270,6 +275,7 @@ export function TrafficProvider({ children }: { children: ReactNode }) {
             stats,
             settings, updateSettings,
             isSimulating, toggleSimulation, lastSyncTime, syncData,
+            stressTestResult, setStressTestResult,
             notifications, addNotification, clearNotifications, dismissNotification,
         }}>
             {children}

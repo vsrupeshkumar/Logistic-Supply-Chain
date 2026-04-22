@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: trafficmaxxers
+    runtime: docker
+    repo: https://github.com/Anbu-00001/Logistic-supplychain
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: singapore
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: DATABASE_PATH
+        value: /var/data/trafficmaxxers.db
+      - key: USE_REAL_WEATHER
+        value: "true"
+      - key: SIMULATION_SPEED
+        value: "1.0"
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+    disk:
+      name: trafficmaxxers-data
+      mountPath: /var/data
+      sizeGB: 1

@@ -6,6 +6,8 @@ import { TrafficProvider } from '@/lib/TrafficContext';
 import { NotificationPanel } from '@/components/dashboard/NotificationPanel';
 import SimulationController from '@/components/logic/SimulationController';
 
+import { StressTestSimulator } from '@/components/dashboard/StressTestSimulator';
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <TrafficProvider>

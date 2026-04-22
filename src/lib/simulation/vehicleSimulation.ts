@@ -7,6 +7,9 @@ import { db } from '../db/database';
 import { getRoute, getRouteAlternatives } from '../routing/osrmService';
 import { VehicleAgent } from '../ai/vehicleAgent';
 import { fetchTrafficIncidents, type TrafficIncident } from '../traffic/freeTrafficService';
+import trafficPatternsRaw from '../data/trafficPatterns.json';
+
+const trafficPatterns = trafficPatternsRaw as Record<string, any>;
 
 interface RoutePoint {
   lat: number;
@@ -73,13 +76,50 @@ class VehicleSimulationEngine {
     console.log(`🛑 Simulation stopped (ID: ${this.instanceId})`);
   }
 
+  private isProcessing: boolean = false;
+
   /**
    * Main simulation tick - updates all vehicles
    */
   private async simulationTick() {
+    if (this.isProcessing) return; // Prevent tick pile-up
+    this.isProcessing = true;
+
     try {
       const vehicles = db.getVehicles();
-      const transitVehicles = vehicles.filter((v: any) => v.status === 'in-transit');
+      const transitVehicles = [];
+
+      // WAREHOUSES (Real Bangalore Logistics Hubs)
+      const WAREHOUSES = [
+         { name: "Peenya Industrial Hub", lat: 13.0285, lng: 77.5197 },
+         { name: "Whitefield Logistics", lat: 12.9698, lng: 77.7499 },
+         { name: "Bommasandra Hub", lat: 12.8160, lng: 77.6811 },
+         { name: "Hoskote Cargo Terminal", lat: 13.0722, lng: 77.7896 }
+      ];
+
+      for (const vehicle of vehicles) {
+          // Implement physical snapping for non-transit states
+          if (vehicle.status === 'maintenance') {
+              // Snap to nearest Warehouse
+              let nearestW = WAREHOUSES[0];
+              let minDist = Number.MAX_VALUE;
+              for (const w of WAREHOUSES) {
+                  const d = this.getDistance(vehicle.location_lat, vehicle.location_lng, w.lat, w.lng);
+                  if (d < minDist) { minDist = d; nearestW = w; }
+              }
+              if (minDist > 0.001) {
+                  db.updateVehicleLocation(vehicle.id, nearestW.lat, nearestW.lng, 0, 0);
+              }
+          } else if (vehicle.status === 'refueling') {
+              // Snap to Nearest Petrol Bunk
+              const nearestStation = db.getNearestFuelStation(vehicle.location_lat, vehicle.location_lng);
+              if (nearestStation && this.getDistance(vehicle.location_lat, vehicle.location_lng, nearestStation.location_lat, nearestStation.location_lng) > 0.001) {
+                  db.updateVehicleLocation(vehicle.id, nearestStation.location_lat, nearestStation.location_lng, 0, 0);
+              }
+          } else if (vehicle.status === 'in-transit') {
+              transitVehicles.push(vehicle);
+          }
+      }
 
       if (transitVehicles.length === 0) {
         return; // No vehicles to simulate
@@ -96,6 +136,8 @@ class VehicleSimulationEngine {
 
     } catch (error) {
       console.error('❌ Simulation tick error:', error);
+    } finally {
+      this.isProcessing = false;
     }
   }
 
@@ -104,8 +146,17 @@ class VehicleSimulationEngine {
    */
   private updateTrafficZones() {
     try {
-        const vehicles = db.getVehicles() as any[]; // Get fresh locations
+        const vehicles = db.getVehicles() as any[]; 
         const zones = db.getZones() as any[];
+        
+        // Determine Time Block based on real time
+        const hour = new Date().getHours();
+        let timeBlock = 'Midnight';
+        if (hour >= 6 && hour < 11) timeBlock = 'Morning';
+        else if (hour >= 11 && hour < 15) timeBlock = 'Noon';
+        else if (hour >= 15 && hour < 21) timeBlock = 'Daytime';
+        
+        const activePattern = trafficPatterns[timeBlock] || trafficPatterns['Daytime'];
         
         for (const zone of zones) {
            try {
@@ -113,7 +164,6 @@ class VehicleSimulationEngine {
                let zLat: number = 0;
                let zLng: number = 0;
                
-               // Robust Zone Location Parsing
                if ((zone as any).center_lat != null && (zone as any).center_lng != null) {
                    zLat = Number((zone as any).center_lat);
                    zLng = Number((zone as any).center_lng);
@@ -124,10 +174,8 @@ class VehicleSimulationEngine {
                    zLat = Number(zone.location.lat); zLng = Number(zone.location.lng);
                }
                
-               // Skip if coordinates are invalid
                if (!zLat || !zLng || isNaN(zLat) || isNaN(zLng)) continue;
                
-               // Count vehicles within 1km (approx 0.01 deg)
                for (const v of vehicles) {
                    if (v.status === 'in-transit') {
                        const d = Math.sqrt(Math.pow(v.location_lat - zLat, 2) + Math.pow(v.location_lng - zLng, 2));
@@ -135,27 +183,31 @@ class VehicleSimulationEngine {
                    }
                }
                
-               // Update zone with BASELINE + Vehicle Count + Time Variation
-               // Baseline: Every zone has 20-50% congestion naturally
-               let baseCongestion = 20 + Math.random() * 30;
+               // Retrieve base congestion from REAL DATA
+               let baseCongestion = 30; // default
+               const zoneData = activePattern[zone.name];
                
-               // Add vehicle-based congestion on top
-               let vehicleCongestion = 0;
-               if (count > 5) vehicleCongestion = 40;
-               else if (count > 2) vehicleCongestion = 25;
-               else if (count > 0) vehicleCongestion = 10;
+               if (zoneData) {
+                   if (zoneData.congestion === 'High') baseCongestion = 85;
+                   else if (zoneData.congestion === 'Medium') baseCongestion = 55;
+                   else baseCongestion = 25;
+                   
+                   // Volume influence (e.g. 5000 is high, adjust slightly based on actual volume vs standard)
+                   const volFactor = Math.min(15, (zoneData.volume / 10000) * 15);
+                   baseCongestion += volFactor;
+               } else {
+                   // Fallback for custom/unmapped zones
+                   baseCongestion = 20 + Math.random() * 30;
+               }
                
-               // Time-based variation (simulate rush hour waves)
-               const hour = new Date().getHours();
-               let rushFactor = 0;
-               if (hour >= 8 && hour <= 10) rushFactor = 20; // Morning rush
-               else if (hour >= 17 && hour <= 19) rushFactor = 20; // Evening rush
+               // Add tiny random variation for liveliness
+               const randomNoise = (Math.random() * 8) - 4; // -4% to +4%
                
-               // Random variation for demo realism
-               const randomNoise = Math.random() * 20 - 10;
+               let congestion = baseCongestion + randomNoise;
+               // Live simulation vehicles add minor bump
+               congestion += Math.min(15, count * 2);
                
-               let congestion = baseCongestion + vehicleCongestion + rushFactor + randomNoise;
-               congestion = Math.min(100, Math.max(15, congestion));
+               congestion = Math.min(100, Math.max(10, congestion));
                
                db.updateZoneCongestion(zone.id, Math.round(congestion), count);
            
@@ -274,15 +326,10 @@ class VehicleSimulationEngine {
               }
 
               if (bestRoute !== alternatives[0]) {
-                console.log(`✅ Identified better alternative route. Requesting approval.`);
+                console.log(`✅ Identified better alternative route avoiding congestion. Auto-rerouting ${vehicle.name}!`);
                 
-                // Instead of applying it, we save it and wait for approval
-                db.updateVehicleRoutes(vehicle.id, null, JSON.stringify(bestRoute));
-                db.updateVehicleStatus(vehicle.id, 'needs_approval');
-                
-                // Clear active route in memory so it stops moving
-                this.vehicleRoutes.delete(vehicle.id);
-                return;
+                // Apply the better alternative route automatically
+                route = bestRoute;
               }
               
               // If standard route is still best, we use it directly
@@ -332,8 +379,8 @@ class VehicleSimulationEngine {
         }
       }
 
-      // Check for approval state
-      if (vehicle.status === 'needs_approval') {
+      // Check for approval state or absolutely verify it is moving
+      if (vehicle.status === 'needs_approval' || vehicle.status !== 'in-transit') {
           return; // Do not move
       }
 
@@ -365,13 +412,34 @@ class VehicleSimulationEngine {
       if (currentIndex >= points.length - 1) {
         console.log(`🏁 Vehicle ${vehicle.name} reached destination`);
         
-        // ALWAYS REFUEL at destination (instant) and clear refueling status
-        db.updateVehicleFuel(vehicle.id, 100);
-        db.updateVehicleStatus(vehicle.id, 'idle');
-
-        // SHUTTLE A <-> B Logic
         let nextDestLat: number, nextDestLng: number;
+
+        // Check if this was a refueling trip
+        if (vehicle.alternative_route_json) {
+            try {
+                const altState = JSON.parse(vehicle.alternative_route_json);
+                if (altState && altState.type === 'resume' && altState.dest) {
+                    console.log(`⛽ Vehicle ${vehicle.name} finished refueling at station. Resuming journey...`);
+                    db.updateVehicleFuel(vehicle.id, 100);
+                    db.updateVehicleRoutes(vehicle.id, null, null); // Clear resume state
+                    
+                    nextDestLat = altState.dest.lat;
+                    nextDestLng = altState.dest.lng;
+                    db.updateVehicleDestination(vehicle.id, nextDestLat, nextDestLng);
+                    db.updateVehicleStatus(vehicle.id, 'in-transit'); // keep moving
+                    this.vehicleRoutes.delete(vehicle.id);
+                    return;
+                }
+            } catch (e) {
+                console.error("Error parsing resume state:", e);
+            }
+        }
+
+        // --- NORMAL SHUTTLE A <-> B Logic (NO REFUELING) ---
         
+        // We do NOT reset to idle! We want it to patrol continuously so it consumes fuel
+        db.updateVehicleStatus(vehicle.id, 'in-transit');
+
         // Check if we're at original destination (point B) - if yes, return to start (point A)
         const distToDest = this.getDistance(vehicle.location_lat, vehicle.location_lng, 
                                             routeData.originalDest.lat, routeData.originalDest.lng);
@@ -483,8 +551,21 @@ class VehicleSimulationEngine {
              } else if (decision && decision.action === 'speed_up') {
                  speedFactor = Math.min(1.2, speedFactor * 1.2);
              } else if (decision && decision.action === 'reroute') {
-                 // Trigger re-routing in next tick maybe?
-                 // For now, let's just log it. The main re-routing logic is handled at start of updateVehicle
+                 // Force route recalculation on next tick
+                 console.log(`🤖 AI Agent autonomous REROUTE triggered for ${vehicle.name}`);
+                 this.vehicleRoutes.delete(vehicle.id);
+             } else if (decision && decision.action === 'refuel' && vehicle.status !== 'refueling' && !vehicle.alternative_route_json) {
+                 // AI decided to refuel autonomously
+                 console.log(`🤖 AI Agent autonomous REFUEL triggered for ${vehicle.name}`);
+                 const nearestStation = db.getNearestFuelStation(currentLat, currentLng);
+                 if (nearestStation) {
+                     const resumeState = { type: 'resume', dest: { lat: vehicle.destination_lat, lng: vehicle.destination_lng } };
+                     // Save resume state
+                     db.updateVehicleRoutes(vehicle.id, null, JSON.stringify(resumeState));
+                     // Reroute to station
+                     db.updateVehicleDestination(vehicle.id, nearestStation.location_lat, nearestStation.location_lng);
+                     this.vehicleRoutes.delete(vehicle.id);
+                 }
              }
              
              // Log AI thought

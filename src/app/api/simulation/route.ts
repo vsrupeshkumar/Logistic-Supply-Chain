@@ -9,27 +9,44 @@ function formatStateForFrontend() {
   const environment = db.getEnvironment();
 
   // Convert Unix timestamps to Date objects for frontend
-  const formattedVehicles = vehicles.map((v: any) => ({
-    id: v.id,
-    name: v.name,
-    type: v.type,
-    status: v.status,
-    location: {
-      lat: v.location_lat,
-      lng: v.location_lng
-    },
-    speed: v.speed,
-    heading: v.heading,
-    fuel: v.fuel,
-    cargoWeight: v.cargo_weight,
-    cargoCapacity: v.cargo_capacity,
-    aiPersonality: v.ai_personality,
-    lastUpdate: new Date(v.updated_at * 1000).toISOString()
-  }));
+  const formattedVehicles = vehicles.map((v: any) => {
+    let efficiency = 100; // Default when idle
+    if (v.status === 'in-transit') {
+      // Slow traffic reduces efficiency
+      if (v.speed < 20) {
+        efficiency = 40 + (v.speed * 2); 
+      } else {
+        // Optimal speed
+        efficiency = 80 + Math.random() * 15;
+      }
+    } else if (v.status === 'refueling' || v.status === 'maintenance') {
+      efficiency = 0;
+    }
+    
+    return {
+      id: v.id,
+      name: v.name,
+      type: v.type,
+      status: v.status,
+      location: {
+        lat: v.location_lat,
+        lng: v.location_lng
+      },
+      speed: v.speed,
+      heading: v.heading,
+      fuel: v.fuel,
+      efficiency: Math.round(efficiency),
+      cargoWeight: v.cargo_weight,
+      cargoCapacity: v.cargo_capacity,
+      aiPersonality: v.ai_personality,
+      lastUpdate: new Date(v.updated_at * 1000).toISOString()
+    };
+  });
 
   const formattedZones = zones.map((z: any) => ({
     id: z.id,
-    name: z.name,
+    area: z.name,
+    name: z.name, // Keep name for legacy compatibility
     location: {
       lat: z.center_lat,
       lng: z.center_lng

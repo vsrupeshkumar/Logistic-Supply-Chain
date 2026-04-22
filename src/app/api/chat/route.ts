@@ -39,15 +39,20 @@ export async function POST(request: NextRequest) {
 
         // Build a concise, deterministic message (no external API)
         const lastUser = messages.length ? messages[messages.length - 1].content : 'No user message provided.';
-        const message = `**Live Fleet Snapshot**\n- Vehicles: ${totalVehicles} total | ${inTransit} in-transit | ${idle} idle | ${refueling} refueling\n- Incidents: ${incidents.length} active\n- Top congestion: ${topZones.map(z => `${z.name} (${Math.round(z.congestion_level || 0)}%)`).join(', ') || 'none'}\n\nUser asked: ${lastUser}`;
+        const message = `**Live Fleet Snapshot**\n- Vehicles: ${totalVehicles} total, ${inTransit} in-transit, ${idle} idle, ${refueling} refueling\n- Incidents: ${incidents.length} active\n- Top congestion: ${topZones.map(z => `${z.name} (${Math.round(z.congestion_level || 0)}%)`).join(', ') || 'none'}`;
 
         const aiModel = 'openai/gpt-oss-20b:free';
 
         // System context for AI (uses live stats)
         const systemContext = `You are TrafficMaxxer AI, a Bangalore traffic routing expert.
 
+IMPORTANT INSTRUCTIONS:
+1. DO NOT use markdown tables or pipes (|) anywhere in your response. 
+2. Format all data as simple, clean bulleted lists.
+3. Keep sentences natural without random slashes or lines.
+
 Live status:
-- Vehicles: ${totalVehicles} total | ${inTransit} in-transit | ${idle} idle | ${refueling} refueling
+- Vehicles: ${totalVehicles} total, ${inTransit} in-transit, ${idle} idle, ${refueling} refueling
 - Incidents: ${incidents.length} active
 - Top congestion: ${topZones.map(z => `${z.name} (${Math.round(z.congestion_level || 0)}%)`).join(', ') || 'none'}`;
 
