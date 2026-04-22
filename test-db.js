@@ -31,3 +31,4 @@ try {
 } catch (err) {
   console.error('Failed to open database:', err);
 }
+

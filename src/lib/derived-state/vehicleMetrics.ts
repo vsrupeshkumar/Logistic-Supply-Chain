@@ -86,3 +86,4 @@ export function getFleetComposition(vehicles: Vehicle[]) {
 export function getTopCongestedZones(zones: TrafficZone[], n = 4): TrafficZone[] {
   return [...zones].sort((a, b) => b.congestionLevel - a.congestionLevel).slice(0, n);
 }
+

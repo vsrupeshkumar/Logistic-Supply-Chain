@@ -144,3 +144,4 @@ export const EVENT_TYPE_LABELS: Record<AIEventType, string> = {
   prioritize:  'PRIORITY',
   arrival:     'ARRIVAL',
 };
+

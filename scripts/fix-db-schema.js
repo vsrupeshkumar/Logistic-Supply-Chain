@@ -35,3 +35,4 @@ try {
     console.error('❌ Error fixing database schema:', error);
     process.exit(1);
 }
+

@@ -224,3 +224,4 @@ Your Trafficmaxxers system now has:
 - ✅ Realistic Bangalore simulation
 
 **Run `npm run dev` and start creating vehicles!** 🚛
+

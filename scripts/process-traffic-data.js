@@ -102,3 +102,4 @@ if (!fs.existsSync(dir)) {
 
 fs.writeFileSync(outPath, JSON.stringify(finalData, null, 2));
 console.log('Traffic patterns generated at', outPath);
+

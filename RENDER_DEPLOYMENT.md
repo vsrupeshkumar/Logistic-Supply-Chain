@@ -117,3 +117,4 @@ Render free tier sleeps. Use this free workaround:
    https://[your-app].onrender.com/api/health
 3. Set interval: 10 minutes
 4. This keeps the service warm during your presentation.
+

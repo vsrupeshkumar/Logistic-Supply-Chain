@@ -415,3 +415,4 @@ export async function testAIConnection(): Promise<boolean> {
     return false;
   }
 }
+

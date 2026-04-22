@@ -69,3 +69,4 @@ UPDATE zones SET vehicle_count = (
     WHERE SQRT(POWER((v.location_lat - zones.center_lat) * 111000, 2) + 
                POWER((v.location_lng - zones.center_lng) * 111000, 2)) < zones.radius_meters
 );
+

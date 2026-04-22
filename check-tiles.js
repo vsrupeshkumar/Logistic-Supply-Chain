@@ -22,3 +22,4 @@ const samples = db.prepare('SELECT zoom_level, tile_column, tile_row FROM tiles 
 samples.forEach(t => console.log(`  ${t.zoom_level}/${t.tile_column}/${t.tile_row}`));
 
 db.close();
+

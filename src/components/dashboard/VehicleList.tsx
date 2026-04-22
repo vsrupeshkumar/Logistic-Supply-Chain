@@ -302,3 +302,4 @@ export function VehicleList() {
         </div>
     );
 }
+

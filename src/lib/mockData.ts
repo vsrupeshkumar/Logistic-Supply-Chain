@@ -111,3 +111,4 @@ export const incidents: Incident[] = [
         severity: 'low'
     }
 ];
+

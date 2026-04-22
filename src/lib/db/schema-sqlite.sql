@@ -265,3 +265,4 @@ FOR EACH ROW
 BEGIN
     UPDATE fuel_stations SET updated_at = strftime('%s', 'now') WHERE id = NEW.id;
 END;
+

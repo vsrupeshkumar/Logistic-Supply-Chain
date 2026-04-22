@@ -845,3 +845,4 @@ export function stopSimulation() {
     engineInstance.stop();
   }
 }
+

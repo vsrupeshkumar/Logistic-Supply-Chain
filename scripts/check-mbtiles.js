@@ -83,3 +83,4 @@ console.log('\n' + '─'.repeat(60));
 console.log('✅ MBTiles scan complete!\n');
 console.log('💡 To use a different file, update FILENAME in:');
 console.log('   src/lib/db/tilesDb.ts\n');
+

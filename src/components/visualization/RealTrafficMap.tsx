@@ -737,3 +737,4 @@ function getPopupContent(vehicle: any, speed: number) {
         </div>
     `;
 }
+

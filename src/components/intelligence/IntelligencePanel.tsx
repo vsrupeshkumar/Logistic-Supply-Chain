@@ -178,3 +178,4 @@ export const IntelligencePanel = memo(function IntelligencePanel({ className = '
     </div>
   );
 });
+

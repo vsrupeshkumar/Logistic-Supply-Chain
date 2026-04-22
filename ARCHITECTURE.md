@@ -226,3 +226,4 @@ LIMIT 1;
 
 **Current Status**: Core architecture complete, ready to integrate with frontend.
 **Next**: Update SimulationController and API routes to use new system.
+

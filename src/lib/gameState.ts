@@ -60,3 +60,4 @@ export const resetGameState = () => {
     globalForSim.trafficSimulationState = undefined;
     return getGameState();
 }
+

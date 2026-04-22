@@ -108,3 +108,4 @@ npm run dev
 ```
 
 Then navigate to http://localhost:3000/dashboard/map and watch the magic! 🚀
+
